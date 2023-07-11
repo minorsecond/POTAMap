@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="description" content="A dynamic packet radio map showing operator & NET/ROM node locations, checked multiple times throughout the day.">
+  <meta name="viewport" content="width=device-width, initial-scale=.7">
+  <link rel="icon"
+        type="image/png"
+        href="favicon.png">
+  <link rel="stylesheet" href="https://unpkg.com/ol-layerswitcher@3.8.3/dist/ol-layerswitcher.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="node_modules/sidebar-v2/css/ol3-sidebar.css" />
+  <meta charset="utf-8">
+  <title>Packet Radio Map</title>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QF4ET8JV46"></script>
+  <script type="module">
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-QF4ET8JV46');
+  </script>
+  <style>
+    html, body{
+      height: 100%;
+      margin: 0;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+<script type="module" src="./main.js"> </script>
+<div style="position: absolute; right: 2%; bottom: 2%;" class id="info"> </div>
+</body>
+</html>

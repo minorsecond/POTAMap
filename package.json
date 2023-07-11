@@ -1,0 +1,18 @@
+{
+  "name": "pota-map",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "Ross Wardrup",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "parcel index.html",
+    "build": "parcel build --public-url . index.html"
+  },
+  "dependencies": {
+    "ol": "^7.4.0",
+    "ol-layerswitcher": "^4.1.1"
+  },
+  "keywords": [],
+  "license": "ISC"
+}
