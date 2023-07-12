@@ -2,7 +2,6 @@
   "name": "pota-map",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "author": "Ross Wardrup",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -11,7 +10,8 @@
   },
   "dependencies": {
     "ol": "^7.4.0",
-    "ol-layerswitcher": "^4.1.1"
+    "ol-layerswitcher": "^4.1.1",
+    "parcel": "^2.9.3"
   },
   "keywords": [],
   "license": "ISC"

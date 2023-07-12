@@ -1,5 +1,4 @@
 import 'ol/ol.css';
-import 'ol-layerswitcher/dist/ol-layerswitcher.css';
 import LayerGroup from 'ol/layer/Group'
 import Map from 'ol/Map';
 import OSM from 'ol/source/OSM';
@@ -12,12 +11,9 @@ import GeoJSON from 'ol/format/GeoJSON';
 import {Style, Circle, Fill, Stroke} from 'ol/style';
 import {Attribution, defaults as defaultControls} from 'ol/control'
 import XYZ from "ol/source/XYZ";
-import {Sidebar} from 'ol/control.js';
-import LayerSwitcher from 'ol-layerswitcher';
-import RenderOptions from 'ol-layerswitcher'
 
-const geoserver_url = "192.168.3.201:8080/geoserver/";
-const geoserver_wms = geoserver_url + "PacketMap/wms";
+const geoserver_url = "https://geo.spatstats.com/geoserver/";
+const geoserver_wms = geoserver_url + "potamap/wms";
 const geoserver_wfs = geoserver_url + "ows?service=WFS&";
 
 const OSMLayer = new TileLayer({
@@ -32,9 +28,9 @@ const OSMLayer = new TileLayer({
 })
 
 const activationLocationSource = new TileWMS({
-    url: geoserver_url,
+    url: geoserver_wms,
     params: {
-        'LAYERS': 'Projects:activation_locations',
+        'LAYERS': 'potamap:activation_locations',
         'TILED': true,
         'VERSION': '1.1.1',
     },
@@ -82,15 +78,6 @@ const map = new Map({
             collapsible: false
         }
     })
-});
-
-const render_options = new RenderOptions({
-    activationMode: 'mouseover',
-    startActive: false,
-    collapseLabel: '\u00BB',
-    label: '\u00AB',
-    reverse: false,
-    groupSelectStyle: "children"
 });
 
 map.on('singleclick', function (evt) {
@@ -226,9 +213,6 @@ const attribution = new Attribution({
 
 // Build legend
 window.onload = function () {
-    const sidebar = new Sidebar({ element: 'sidebar', position: 'left' });
-    map.addControl(layerSwitcher);
-    map.addControl(sidebar);
     document.getElementById('map-legend').innerHTML =
         "<table class=\"styled-legend\">\n" +
         "    <thead>\n" +
