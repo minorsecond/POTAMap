@@ -98,7 +98,7 @@ map.on('singleclick', function (evt) {
         {'INFO_FORMAT': 'application/json'}
     )
 
-    if (activationLocationInfo && activationLocationMap.getVisible() === true) {
+    if (activationLocationInfo) {
         fetch(activationLocationInfo)
             .then(function (response) { return response.text(); })
             .then(function (json) {
@@ -106,22 +106,25 @@ map.on('singleclick', function (evt) {
                 console.log(inf)
                 if (inf.length > 0) {
                     inf = inf[0].properties
+                    const park_name = inf.park_name;
+                    const park_id = inf.park_id;
+                    const notes = inf.notes;
 
                     document.getElementById('info').innerHTML =
                         "<table class=\"styled-table\">\n" +
                         "    <thead>\n" +
-                        "      <tr><th colspan='3' class='table-title'>Path Members</th></tr>" +
+                        "      <tr><th colspan='3' class='table-title'>Activation Location Info</th></tr>" +
                         "        <tr>\n" +
-                        "            <th>Call A</th>\n" +
-                        "            <th>Call B</th>\n" +
-                        "            <th>Via</th>\n" +
+                        "            <th>Park Name</th>\n" +
+                        "            <th>Park Id</th>\n" +
+                        "            <th>Notes</th>\n" +
                         "        </tr>\n" +
                         "    </thead>\n" +
                         "    <tbody>\n" +
                         "        <tr class=\"active-row\">\n" +
-                        "            <td>call</td>\n".replace("call", "call_a") +
-                        "            <td>call</td>\n".replace("call", "call_b") +
-                        "            <td>via</td>\n".replace("via", "parent_node") +
+                        "            <td>park_name</td>\n".replace("park_name", park_name) +
+                        "            <td>park_id</td>\n".replace("park_id", park_id) +
+                        "            <td>notes</td>\n".replace("notes", notes) +
                         "        </tr>\n" +
                         "        <!-- and so on... -->\n" +
                         "    </tbody>\n" +
