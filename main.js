@@ -100,6 +100,14 @@ const heatmapLayer = new HeatmapLayer({
     maxZoom: maxZoom
 });
 
+// Get the heatmap toggle checkbox
+const heatmapToggleCheckbox = document.getElementById('heatmap-toggle-checkbox');
+
+// Toggle the visibility of the heatmap layer based on the checkbox state
+heatmapToggleCheckbox.addEventListener('change', function () {
+    heatmapLayer.setVisible(this.checked);
+});
+
 const highlightStyle = new Style({
     image: new Circle({
         radius: 5,
