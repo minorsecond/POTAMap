@@ -11,6 +11,7 @@ import XYZ from "ol/source/XYZ";
 import HeatmapLayer from 'ol/layer/Heatmap';
 
 import ScaleLine from 'ol/control/ScaleLine';
+import {TileWMS} from "ol/source";
 
 // Create the scale line control
 const scaleLineControl = new ScaleLine({
@@ -49,6 +50,16 @@ const activationLocationSource = new VectorSource({
     strategy: bboxStrategy,
 });
 
+const stateParkSource = new TileWMS({
+    url: geoserver_wms,
+    params: {'LAYERS': 'potamap:state_parks',
+        'TILED': true,
+        'VERSION': '1.1.1',
+    },
+    serverType: 'geoserver',
+    ratio: 1
+})
+
 const ActivationLocationStyle = function(feature, resolution) {
     const rating = feature.get('rating');
     let color;
@@ -84,6 +95,12 @@ var activationLocationMap = new VectorLayer({
     visible: true,
     source: activationLocationSource,
     style: ActivationLocationStyle,
+});
+
+const stateParksMap = new Tile({
+    title: 'State Parks',
+    visible: true,
+    source: stateParkSource,
 });
 
 // Create a HeatmapLayer and set its source to the VectorLayer source
@@ -129,7 +146,7 @@ const view = new View({
 let highlight;
 
 const map = new Map({
-    layers: [OSMLayer, heatmapLayer, activationLocationMap],
+    layers: [OSMLayer, stateParksMap, heatmapLayer, activationLocationMap],
     target: 'map',
     view: view,
     controls: defaultControls({
