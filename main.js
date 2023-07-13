@@ -14,7 +14,7 @@ import XYZ from "ol/source/XYZ";
 
 const geoserver_url = "https://geo.spatstats.com/geoserver/";
 const geoserver_wms = geoserver_url + "potamap/wms";
-const geoserver_wfs = geoserver_url + "ows?service=WFS&";
+const geoserver_wfs = geoserver_url + "potamap/ows?service=WFS&";
 
 const OSMLayer = new TileLayer({
     type: 'base',
@@ -27,37 +27,43 @@ const OSMLayer = new TileLayer({
     })
 })
 
-const activationLocationSource = new TileWMS({
-    url: geoserver_wms,
-    params: {
-        'LAYERS': 'potamap:activation_locations',
-        'TILED': true,
-        'VERSION': '1.1.1',
+const activationLocationSource = new VectorSource({
+    format: new GeoJSON(),
+    attributions: "R.R. Wardrup | www.rwardrup.com",
+    url: function (extent) {
+        return (
+            geoserver_wfs +
+            'version=1.0.0&request=GetFeature&typename=potamap:activation_locations&' +
+            'outputFormat=application/json&srsname=EPSG:3857&' +
+            'bbox=' +
+            extent.join(',') +
+            ',EPSG:3857'
+        );
     },
-    serverType: 'geoserver',
-    ratio: 1
-})
+    strategy: bboxStrategy,
+});
 
-const activationLocationMap = new TileLayer({
-    title: 'POTA Activation Locations',
+const ActivationLocationStyle = new Style({
+    image: new Circle({
+        radius: 5,
+        fill: new Fill({
+            color: 'rgba(55, 126, 184, 1.0)'
+        }),
+    })
+});
+
+var activationLocationMap = new VectorLayer({
+    title: 'Activation Locations',
     visible: true,
-    source: activationLocationSource
-})
+    source: activationLocationSource,
+    style: ActivationLocationStyle,
+});
 
 const highlightStyle = new Style({
     image: new Circle({
         radius: 5,
         fill: new Fill({
             color: 'rgba(228, 26, 28, 1.0)'
-        }),
-    })
-});
-
-const RemoteHeardOpStyle = new Style({
-    image: new Circle({
-        radius: 5,
-        fill: new Fill({
-            color: 'rgba(55, 126, 184, 1.0)'
         }),
     })
 });
@@ -91,62 +97,10 @@ map.on('singleclick', function (evt) {
         });
 
     const viewResolution = /** @type {number} */ (view.getResolution());
-    const activationLocationInfo = activationLocationSource.getFeatureInfoUrl(
-        evt.coordinate,
-        viewResolution,
-        'EPSG:3857',
-        {'INFO_FORMAT': 'application/json'}
-    )
-
-    if (activationLocationInfo) {
-        fetch(activationLocationInfo)
-            .then(function (response) { return response.text(); })
-            .then(function (json) {
-                let inf = JSON.parse(json).features;
-                console.log(inf)
-                if (inf.length > 0) {
-                    inf = inf[0].properties
-                    const park_name = inf.park_name;
-                    const park_id = inf.park_id;
-                    const notes = inf.notes;
-
-                    document.getElementById('info').innerHTML =
-                        "<table class=\"styled-table\">\n" +
-                        "    <thead>\n" +
-                        "      <tr><th colspan='3' class='table-title'>Activation Location Info</th></tr>" +
-                        "        <tr>\n" +
-                        "            <th>Park Name</th>\n" +
-                        "            <th>Park Id</th>\n" +
-                        "            <th>Notes</th>\n" +
-                        "        </tr>\n" +
-                        "    </thead>\n" +
-                        "    <tbody>\n" +
-                        "        <tr class=\"active-row\">\n" +
-                        "            <td>park_name</td>\n".replace("park_name", park_name) +
-                        "            <td>park_id</td>\n".replace("park_id", park_id) +
-                        "            <td>notes</td>\n".replace("notes", notes) +
-                        "        </tr>\n" +
-                        "        <!-- and so on... -->\n" +
-                        "    </tbody>\n" +
-                        "</table>";
-
-                }
-            })
-    }
 
     if (features !== highlight) {
         if (highlight) {
-            if (highlight.id_.includes("Node")) {
-                highlight.setStyle(NodeStyle);
-            } else if (highlight.id_.includes("Remote_Operators")) {
-                highlight.setStyle(RemoteHeardOpStyle);
-            } else if (highlight.id_.includes("Operator")) {
-                highlight.setStyle(DirectHeardOPStyle);
-            } else if (highlight.id_.includes("Remote_Digipeater")) {
-                highlight.setStyle(RemoteDigiStyle);
-            } else if (highlight.id_.includes("Digipeater")) {
-                highlight.setStyle(DirectHeardDigiStyle);
-            }
+            highlight.setStyle(ActivationLocationStyle)
         }
         if (features) {
             console.log("Hightlighting feature");
@@ -155,53 +109,31 @@ map.on('singleclick', function (evt) {
         highlight = features;
     }
     if (features !== undefined) {
-        const call = features.get("call");
-        const grid = features.get("grid");
-        const feature_id = features.id_;
+        const park_name = features.get("park_name");
+        const park_id = features.get("park_id");
+        const notes = features.get("notes");
 
-        if (feature_id.includes("Remote_Operators")) {
-            feature_type = "Remote Operator";
-            const call = features.get("remote_call");
-            const digi_last_heard = features.get("lastheard");
-            const digi_formatted_lh = new Date(digi_last_heard).toLocaleString('en-US',
-                {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'});
-
-            const port_name = features.get('port').split(" ");
-
-            let bands = features.get("bands")
-            console.log(bands);
-            if (bands !== undefined && bands !== null) {
-                bands = bands.replace(/(^,)|(,$)/g, "");
-                bands = replace_band_order(bands).replace(/,/g, ', ');  // 40CM, 2M, 20M, then 40M
-            } else {
-                bands = "Unknown";
-            }
-
-            document.getElementById('info').innerHTML =
-                "<table class=\"styled-table\">\n" +
-                "    <thead>\n" +
-                "      <tr><th colspan='5' class='table-title'>Operator</th></tr>" +
-                "        <tr>\n" +
-                "            <th>Call</th>\n" +
-                "            <th>Grid</th>\n" +
-                "            <th>Heard On\n</th>" +
-                "            <th>Last Seen</th>\n" +
-                "            <th></th>\n" +
-                "        </tr>\n" +
-                "    </thead>\n" +
-                "    <tbody>\n" +
-                "        <tr class=\"active-row\">\n" +
-                "            <td><a href=\https://www.qrz.com/db/call target='_blank' \>call</a></td>\n".replaceAll("call", call) +
-                "            <td>grid</td>\n".replace("grid", grid) +
-                "            <td>bands</td>\n".replace("bands", bands) +
-                "            <td>last_heard</td>\n".replace("last_heard", digi_formatted_lh) +
-                "            <td></td>" +
-                "        </tr>\n" +
-                "        <!-- and so on... -->\n" +
-                "    </tbody>\n" +
-                "</table>"
-
-        }
+        document.getElementById('info').innerHTML =
+            "<table class=\"styled-table\">\n" +
+            "    <thead>\n" +
+            "      <tr><th colspan='5' class='table-title'>Activation Location</th></tr>" +
+            "        <tr>\n" +
+            "            <th>Park Name</th>\n" +
+            "            <th>Park ID</th>\n" +
+            "            <th>Notes</th>" +
+            "            <th></th>\n" +
+            "        </tr>\n" +
+            "    </thead>\n" +
+            "    <tbody>\n" +
+            "        <tr class=\"active-row\">\n" +
+            "            <td>park_name</td>\n".replaceAll("park_name", park_name) +
+            "            <td>park_id</td>\n".replace("park_id", park_id) +
+            "            <td>notes</td>\n".replace("notes", notes) +
+            "            <td></td>" +
+            "        </tr>\n" +
+            "        <!-- and so on... -->\n" +
+            "    </tbody>\n" +
+            "</table>"
 
         console.log(feature_type);
         //displayFeatureInfo(evt.pixel);
