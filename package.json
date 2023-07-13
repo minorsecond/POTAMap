@@ -14,5 +14,8 @@
     "parcel": "^2.9.3"
   },
   "keywords": [],
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "buffer": "^6.0.3"
+  }
 }

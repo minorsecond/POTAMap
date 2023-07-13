@@ -1,22 +1,28 @@
 import 'ol/ol.css';
-import LayerGroup from 'ol/layer/Group'
 import Map from 'ol/Map';
-import OSM from 'ol/source/OSM';
-import TileWMS from 'ol/source/TileWMS'
 import View from 'ol/View';
-import {Tile as TileLayer, Vector as VectorLayer} from 'ol/layer';
+import {Tile as Tile, Vector as VectorLayer} from 'ol/layer';
 import {bbox as bboxStrategy} from 'ol/loadingstrategy'
 import VectorSource from 'ol/source/Vector';
 import GeoJSON from 'ol/format/GeoJSON';
 import {Style, Circle, Fill, Stroke} from 'ol/style';
 import {Attribution, defaults as defaultControls} from 'ol/control'
 import XYZ from "ol/source/XYZ";
+import HeatmapLayer from 'ol/layer/Heatmap';
+
+import ScaleLine from 'ol/control/ScaleLine';
+
+// Create the scale line control
+const scaleLineControl = new ScaleLine({
+    target: document.getElementById('scale-line'), // Replace 'scale-line' with the ID of the HTML element where you want to display the zoom level
+    units: 'metric' // Adjust the units as desired (e.g., 'metric', 'imperial')
+});
 
 const geoserver_url = "https://geo.spatstats.com/geoserver/";
 const geoserver_wms = geoserver_url + "potamap/wms";
 const geoserver_wfs = geoserver_url + "potamap/ows?service=WFS&";
 
-const OSMLayer = new TileLayer({
+const OSMLayer = new Tile({
     type: 'base',
     visible: true,
     displayInLayerSwitcher: false,
@@ -80,6 +86,20 @@ var activationLocationMap = new VectorLayer({
     style: ActivationLocationStyle,
 });
 
+// Create a HeatmapLayer and set its source to the VectorLayer source
+const minZoom = 12; // Minimum zoom level to show the heatmap layer
+const maxZoom = 20; // Maximum zoom level to show the heatmap layer
+
+const heatmapLayer = new HeatmapLayer({
+    source: activationLocationSource,
+    blur: 150,
+    radius: 200,
+    opacity: 0.5,
+    gradient: ['#00f', '#0ff', '#0f0', '#ff0', '#f00'],
+    minZoom: minZoom,
+    maxZoom: maxZoom
+});
+
 const highlightStyle = new Style({
     image: new Circle({
         radius: 5,
@@ -101,7 +121,7 @@ const view = new View({
 let highlight;
 
 const map = new Map({
-    layers: [OSMLayer, activationLocationMap],
+    layers: [OSMLayer, activationLocationMap, heatmapLayer],
     target: 'map',
     view: view,
     controls: defaultControls({
@@ -110,6 +130,8 @@ const map = new Map({
         }
     })
 });
+
+map.addControl(scaleLineControl);
 
 // After adding the layer to the map, wait for the source to load
 activationLocationSource.once('change', function() {
