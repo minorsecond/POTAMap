@@ -43,14 +43,21 @@ const activationLocationSource = new VectorSource({
     strategy: bboxStrategy,
 });
 
-const ActivationLocationStyle = new Style({
-    image: new Circle({
-        radius: 5,
-        fill: new Fill({
-            color: 'rgba(55, 126, 184, 1.0)'
-        }),
-    })
-});
+const ActivationLocationStyle = function(feature, resolution) {
+    const rating = feature.get('rating');
+    const red = Math.round((5 - rating) * 51);  // Increase red component as rating decreases
+    const green = Math.round(rating * 25);  // Increase green component as rating increases
+    const color = `rgba(${red}, ${green}, 0, 1.0)`;
+
+    return new Style({
+        image: new Circle({
+            radius: 5,
+            fill: new Fill({
+                color: color
+            }),
+        })
+    });
+};
 
 var activationLocationMap = new VectorLayer({
     title: 'Activation Locations',
@@ -62,9 +69,13 @@ var activationLocationMap = new VectorLayer({
 const highlightStyle = new Style({
     image: new Circle({
         radius: 5,
-        fill: new Fill({
-            color: 'rgba(228, 26, 28, 1.0)'
+        stroke: new Stroke({
+            color: 'rgba(255, 0, 0, 1.0)',
+            width: 2
         }),
+        fill: new Fill({
+            color: 'rgba(255, 255, 0, 1.0)'  // Yellow color for highlighting
+        })
     })
 });
 
