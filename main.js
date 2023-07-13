@@ -129,7 +129,7 @@ const view = new View({
 let highlight;
 
 const map = new Map({
-    layers: [OSMLayer, activationLocationMap, heatmapLayer],
+    layers: [OSMLayer, heatmapLayer, activationLocationMap],
     target: 'map',
     view: view,
     controls: defaultControls({
