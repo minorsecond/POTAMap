@@ -190,7 +190,7 @@ window.onload = function () {
     document.getElementById('map-legend').innerHTML =
         "<table class=\"styled-legend\">\n" +
         "    <thead>\n" +
-        "      <tr><th colspan='3' class='table-title'>Rating</th></tr>" +
+        "      <tr><th colspan='3' class='table-title'>Location Rating</th></tr>" +
         "        <tr>\n" +
         "            <th></th>\n" +
         "            <th></th>\n" +
