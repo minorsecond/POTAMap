@@ -45,9 +45,19 @@ const activationLocationSource = new VectorSource({
 
 const ActivationLocationStyle = function(feature, resolution) {
     const rating = feature.get('rating');
-    const red = Math.round((5 - rating) * 51);  // Increase red component as rating decreases
-    const green = Math.round(rating * 25);  // Increase green component as rating increases
-    const color = `rgba(${red}, ${green}, 0, 1.0)`;
+    let color;
+
+    if (rating === 1) {
+        color = 'rgba(255, 0, 0, 1.0)';  // Red for rating 1
+    } else if (rating === 2) {
+        color = 'rgba(255, 128, 0, 1.0)';  // Orange for rating 2
+    } else if (rating === 3) {
+        color = 'rgba(204, 204, 0, 1.0)';  // Yellow for rating 3
+    } else if (rating === 4) {
+        color = 'rgba(168, 232, 57, 1.0)';  // Lighter green for rating 4
+    } else {
+        color = 'rgba(70, 189, 50, 1.0)';  // Darker green for rating 5
+    }
 
     return new Style({
         image: new Circle({
@@ -55,6 +65,10 @@ const ActivationLocationStyle = function(feature, resolution) {
             fill: new Fill({
                 color: color
             }),
+            stroke: new Stroke({
+                color: 'rgba(0, 0, 0, 1.0)',  // Dark border color
+                width: 1
+            })
         })
     });
 };
@@ -95,6 +109,20 @@ const map = new Map({
             collapsible: false
         }
     })
+});
+
+// After adding the layer to the map, wait for the source to load
+activationLocationSource.once('change', function() {
+    if (activationLocationSource.getState() === 'ready') {
+        // Get the extent of the layer's source
+        var extent = activationLocationMap.getSource().getExtent();
+
+        // Fit the view to the extent of the layer
+        map.getView().fit(extent, {
+            padding: [500, 500, 500, 500],  // Optional padding around the extent
+            duration: 1000  // Optional animation duration in milliseconds
+        });
+    }
 });
 
 map.on('singleclick', function (evt) {
@@ -162,7 +190,7 @@ window.onload = function () {
     document.getElementById('map-legend').innerHTML =
         "<table class=\"styled-legend\">\n" +
         "    <thead>\n" +
-        "      <tr><th colspan='3' class='table-title'>Legend</th></tr>" +
+        "      <tr><th colspan='3' class='table-title'>Rating</th></tr>" +
         "        <tr>\n" +
         "            <th></th>\n" +
         "            <th></th>\n" +
@@ -171,28 +199,28 @@ window.onload = function () {
         "    </thead>\n" +
         "    <tbody>\n" +
         "        <tr class=\"active-row\">\n" +
-        "            <td><span class=\"local-op-dot\"></span></td>\n" +
-        "            <td>Local Operator</td>" +
+        "            <td><span class=\"five\"></span></td>\n" +
+        "            <td>5</td>" +
         "            <td></td>" +
         "        </tr>\n" +
         "        <tr class=\"active-row\">\n" +
-        "            <td><span class=\"local-digi-dot\"></span></td>\n" +
-        "            <td>Local Digipeater</td>\n" +
+        "            <td><span class=\"four\"></span></td>\n" +
+        "            <td>4</td>\n" +
         "            <td></td>" +
         "        </tr>" +
         "        <tr class=\"active-row\">\n" +
-        "            <td><span class=\"node-dot\"></span></td>\n" +
-        "            <td>NET/ROM Node</td>\n" +
+        "            <td><span class=\"three\"></span></td>\n" +
+        "            <td>3</td>\n" +
         "            <td></td>" +
         "        </tr>" +
         "        <tr class=\"active-row\">\n" +
-        "            <td><span class=\"remote-digi-dot\"></span></td>\n" +
-        "            <td>Digipeater</td>\n" +
+        "            <td><span class=\"two\"></span></td>\n" +
+        "            <td>2</td>\n" +
         "            <td></td>" +
         "        </tr>" +
         "        <tr class=\"active-row\">\n" +
-        "            <td><span class=\"remote-op-dot\"></span></td>\n" +
-        "            <td>Operator</td>\n" +
+        "            <td><span class=\"one\"></span></td>\n" +
+        "            <td>1</td>\n" +
         "            <td></td>" +
         "        </tr>" +
         "        </tr>\n" +
