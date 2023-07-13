@@ -87,7 +87,7 @@ var activationLocationMap = new VectorLayer({
 });
 
 // Create a HeatmapLayer and set its source to the VectorLayer source
-const minZoom = 12; // Minimum zoom level to show the heatmap layer
+const minZoom = 8; // Minimum zoom level to show the heatmap layer
 const maxZoom = 20; // Maximum zoom level to show the heatmap layer
 
 const heatmapLayer = new HeatmapLayer({
