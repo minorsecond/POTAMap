@@ -33,7 +33,7 @@ const activationLocationSource = new VectorSource({
     url: function (extent) {
         return (
             geoserver_wfs +
-            'version=1.0.0&request=GetFeature&typename=potamap:activation_locations&' +
+            'version=1.0.0&request=GetFeature&typename=potamap:activation_location_w_counts&' +
             'outputFormat=application/json&srsname=EPSG:3857&' +
             'bbox=' +
             extent.join(',') +
@@ -151,6 +151,7 @@ map.on('singleclick', function (evt) {
         const park_name = features.get("park_name");
         const park_id = features.get("park_id");
         const notes = features.get("notes");
+        const activation_count = features.get("activation_count");
 
         document.getElementById('info').innerHTML =
             "<table class=\"styled-table\">\n" +
@@ -160,6 +161,7 @@ map.on('singleclick', function (evt) {
             "            <th>Park Name</th>\n" +
             "            <th>Park ID</th>\n" +
             "            <th>Notes</th>" +
+            "             <th>Act. Count</th>" +
             "            <th></th>\n" +
             "        </tr>\n" +
             "    </thead>\n" +
@@ -168,6 +170,7 @@ map.on('singleclick', function (evt) {
             "            <td>park_name</td>\n".replaceAll("park_name", park_name) +
             "            <td>park_id</td>\n".replace("park_id", park_id) +
             "            <td>notes</td>\n".replace("notes", notes) +
+            "            <td>count</td>\n".replace("count", activation_count) +
             "            <td></td>" +
             "        </tr>\n" +
             "        <!-- and so on... -->\n" +
