@@ -12,6 +12,7 @@ import HeatmapLayer from 'ol/layer/Heatmap';
 
 import ScaleLine from 'ol/control/ScaleLine';
 import {TileWMS} from "ol/source";
+import * as number from "ol/math";
 
 // Create the scale line control
 const scaleLineControl = new ScaleLine({
@@ -50,7 +51,23 @@ const activationLocationSource = new VectorSource({
     strategy: bboxStrategy,
 });
 
-const stateParkSource = new TileWMS({
+const stateParkSource = new VectorSource({
+    format: new GeoJSON(),
+    attributions: "R.R. Wardrup | www.rwardrup.com",
+    url: function (extent) {
+        return (
+            geoserver_wfs +
+            'version=1.0.0&request=GetFeature&typename=potamap:state_parks&' +
+            'outputFormat=application/json&srsname=EPSG:3857&' +
+            'bbox=' +
+            extent.join(',') +
+            ',EPSG:3857'
+        );
+    },
+    strategy: bboxStrategy,
+});
+
+const stateParkSource_ = new TileWMS({
     url: geoserver_wms,
     params: {'LAYERS': 'potamap:state_parks',
         'TILED': true,
@@ -98,10 +115,58 @@ var activationLocationMap = new VectorLayer({
     selectable: true
 });
 
-const stateParksMap = new Tile({
+const stateParksMap_ = new Tile({
     title: 'State Parks',
     visible: true,
     source: stateParkSource,
+});
+
+const stateParkStyle = new Style({
+    fill: new Fill({
+        color: 'rgba(34, 139, 34, 0.4)' // Forest green color with 40% opacity
+    }),
+    stroke: new Stroke({
+        color: '#228B22', // Forest green color with full opacity
+        width: 2 // Adjust the stroke width as desired
+    }),
+    image: new Circle({
+        radius: 7,
+        fill: new Fill({
+            color: 'rgba(34, 139, 34, 0.8)' // Forest green color with 80% opacity
+        }),
+        stroke: new Stroke({
+            color: '#228B22', // Forest green color with full opacity
+            width: 2 // Adjust the stroke width as desired
+        })
+    })
+});
+
+const selectedStateParkStyle = new Style({
+    fill: new Fill({
+        color: 'rgba(34, 139, 34, 0.6)' // Forest green color with 60% opacity
+    }),
+    stroke: new Stroke({
+        color: '#ff0000', // Red color for the stroke
+        width: 3 // Adjust the stroke width as desired
+    }),
+    image: new Circle({
+        radius: 10,
+        fill: new Fill({
+            color: 'rgba(34, 139, 34, 0.8)' // Forest green color with 80% opacity
+        }),
+        stroke: new Stroke({
+            color: '#ff0000', // Red color for the circle stroke
+            width: 3 // Adjust the stroke width as desired
+        })
+    })
+});
+
+var stateParksMap = new VectorLayer({
+    title: 'State Parks',
+    visible: true,
+    source: stateParkSource,
+    style: stateParkStyle,
+    selectable: true
 });
 
 // Create a HeatmapLayer and set its source to the VectorLayer source
@@ -346,51 +411,86 @@ map.on('singleclick', function (evt) {
 
     if (features !== highlight) {
         if (highlight) {
-            highlight.setStyle(ActivationLocationStyle);
-            showHideActivationDetailsDialog("hide");
+            if (highlight.id_.includes("activation_location_w_counts")) {
+                highlight.setStyle(ActivationLocationStyle);
+                showHideActivationDetailsDialog("hide");
+            } else if (highlight.id_.includes("state_parks")) {
+                highlight.setStyle(stateParkStyle);
+            }
         }
         if (features) {
             console.log("Hightlighting feature");
-            features.setStyle(highlightStyle);
+            if (features.id_.includes("activation_location_w_counts")) {
+                features.setStyle(highlightStyle);
+            } else if (features.id_.includes("state_parks")) {
+                features.setStyle(selectedStateParkStyle);
+            }
         }
         highlight = features;
     }
     if (features !== undefined) {
-        const park_name = features.get("park_name");
-        const park_id = features.get("park_id");
-        const notes = features.get("notes");
-        const activation_count = features.get("activation_count");
+        const feature_id = features.id_;
 
-        // Get data to build activations and contacts tables
-        const activationLocationID = features.get("id");
-        const activationDetails = getActivationDetails(activationLocationID);
+        if (feature_id.includes("activation_location_w_counts")) {
+            const notes = features.get("notes");
+            const activation_count = features.get("activation_count");
+            const park_name = features.get("park_name");
+            const park_id = features.get("park_id");
+            
+            // Get data to build activations and contacts tables
+            const activationLocationID = features.get("id");
+            const activationDetails = getActivationDetails(activationLocationID);
 
-        document.getElementById('info').innerHTML =
-            "<table class=\"styled-table\">\n" +
-            "    <thead>\n" +
-            "      <tr><th colspan='5' class='table-title'>Activation Location</th></tr>" +
-            "        <tr>\n" +
-            "            <th>Park Name</th>\n" +
-            "            <th>Park ID</th>\n" +
-            "            <th>Notes</th>" +
-            "             <th>Act. Count</th>" +
-            "            <th></th>\n" +
-            "        </tr>\n" +
-            "    </thead>\n" +
-            "    <tbody>\n" +
-            "        <tr class=\"active-row\">\n" +
-            "            <td>park_name</td>\n".replaceAll("park_name", park_name) +
-            "            <td>park_id</td>\n".replace("park_id", park_id) +
-            "            <td>notes</td>\n".replace("notes", notes) +
-            "            <td>count</td>\n".replace("count", activation_count) +
-            "            <td></td>" +
-            "        </tr>\n" +
-            "        <!-- and so on... -->\n" +
-            "    </tbody>\n" +
-            "</table>"
+            document.getElementById('info').innerHTML =
+                "<table class=\"styled-table\">\n" +
+                "    <thead>\n" +
+                "      <tr><th colspan='5' class='table-title'>Activation Location</th></tr>" +
+                "        <tr>\n" +
+                "            <th>Park Name</th>\n" +
+                "            <th>Park ID</th>\n" +
+                "            <th>Notes</th>" +
+                "             <th>Act. Count</th>" +
+                "            <th></th>\n" +
+                "        </tr>\n" +
+                "    </thead>\n" +
+                "    <tbody>\n" +
+                "        <tr class=\"active-row\">\n" +
+                "            <td>park_name</td>\n".replaceAll("park_name", park_name) +
+                "            <td>park_id</td>\n".replace("park_id", park_id) +
+                "            <td>notes</td>\n".replace("notes", notes) +
+                "            <td>count</td>\n".replace("count", activation_count) +
+                "            <td></td>" +
+                "        </tr>\n" +
+                "        <!-- and so on... -->\n" +
+                "    </tbody>\n" +
+                "</table>"
 
-        //displayFeatureInfo(evt.pixel);
-        showActivationDetailsDialog(activationDetails);
+            //displayFeatureInfo(evt.pixel);
+            showActivationDetailsDialog(activationDetails);
+        } else if (feature_id.includes("state_parks")) {
+            const area = features.get("acres");
+            const park_name = features.get("propname");
+
+            document.getElementById('info').innerHTML =
+                "<table class=\"styled-table\">\n" +
+                "    <thead>\n" +
+                "      <tr><th colspan='5' class='table-title'>Park Info</th></tr>" +
+                "        <tr>\n" +
+                "            <th>Park Name</th>\n" +
+                "            <th>Acreage</th>\n" +
+                "            <th></th>\n" +
+                "        </tr>\n" +
+                "    </thead>\n" +
+                "    <tbody>\n" +
+                "        <tr class=\"active-row\">\n" +
+                "            <td>park_name</td>\n".replaceAll("park_name", park_name) +
+                "            <td>acres</td>\n".replace("acres", number.toFixed(parseFloat(area), 2).toString()) +
+                "            <td></td>" +
+                "        </tr>\n" +
+                "        <!-- and so on... -->\n" +
+                "    </tbody>\n" +
+                "</table>"
+        }
     } else {
         console.log("Clicked on undefined feature");
     }
