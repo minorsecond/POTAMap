@@ -95,6 +95,7 @@ var activationLocationMap = new VectorLayer({
     visible: true,
     source: activationLocationSource,
     style: ActivationLocationStyle,
+    selectable: true
 });
 
 const stateParksMap = new Tile({
@@ -172,21 +173,180 @@ activationLocationSource.once('change', function() {
     }
 });
 
-map.on('singleclick', function (evt) {
-    document.getElementById('info').innerHTML = '';
-    let feature_type = undefined;
-    let features = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
-            return feature;
-        },
-        {
-            hitTolerance: 15
+function getActivationDetails(activationLocationID) {
+    const typeName = 'potamap:activations'; // Workspace and table name
+    const filter = `<Filter><PropertyIsEqualTo><PropertyName>loc_id</PropertyName><Literal>${activationLocationID}</Literal></PropertyIsEqualTo></Filter>`;
+    const outputFormat = 'application/json';
+    const requestUrl = `${geoserver_wfs}version=2.0.0&request=GetFeature&typeNames=${typeName}&outputFormat=${outputFormat}&filter=${encodeURIComponent(filter)}`;
+
+    return fetch(requestUrl)
+        .then(response => response.json())
+        .then(data => {
+            // Assuming the WFS response data contains the activation details
+            const activationDetails = data.features.map(feature => feature.properties);
+
+            return activationDetails;
+        })
+        .catch(error => {
+            console.error(error);
+            return null;
+        });
+}
+
+function getContacts(clickedActivationID) {
+    const typeName = 'potamap:contacts'; // Workspace and table name
+    const filter = `<Filter><PropertyIsEqualTo><PropertyName>activation_id</PropertyName><Literal>${clickedActivationID}</Literal></PropertyIsEqualTo></Filter>`;
+    const outputFormat = 'application/json';
+
+    const requestUrl = `${geoserver_wfs}version=2.0.0&request=GetFeature&typeNames=${typeName}&outputFormat=${outputFormat}&filter=${encodeURIComponent(filter)}`;
+
+    return fetch(requestUrl)
+        .then(response => response.json())
+        .then(data => {
+            // Assuming the WFS response data contains the contacts
+            const contacts = data.features.map(feature => feature.properties);
+
+            return contacts;
+        })
+        .catch(error => {
+            console.error(error);
+            return null;
+        });
+}
+
+function showHideActivationDetailsDialog(action){
+    const dialogElement = document.getElementById('activationInfo');
+    if (action === "show") {
+        dialogElement.classList.remove('hidden');
+    } else {
+        dialogElement.classList.add('hidden');
+    }
+
+}
+
+function showActivationDetailsDialog(activationDetailsPromise) {
+    showHideActivationDetailsDialog("show");
+
+    activationDetailsPromise
+        .then(activationDetails => {
+            const activationInfoElement = document.getElementById('activationInfo');
+            activationInfoElement.innerHTML = ""; // Clear existing content
+
+            const tableElement = document.createElement('table');
+            tableElement.classList.add('styled-table');
+
+            const theadElement = document.createElement('thead');
+            const tbodyElement = document.createElement('tbody');
+
+            const titleRowElement = document.createElement('tr');
+            const titleCellElement = document.createElement('th');
+            titleCellElement.colSpan = 3; // Updated colspan to include the new column
+            titleCellElement.classList.add('table-title');
+            titleCellElement.textContent = 'Activations';
+            titleRowElement.appendChild(titleCellElement);
+            theadElement.appendChild(titleRowElement);
+
+            const headerRowElement = document.createElement('tr');
+            const dateHeaderCellElement = document.createElement('th');
+            dateHeaderCellElement.textContent = 'Date';
+            const validHeaderCellElement = document.createElement('th');
+            validHeaderCellElement.textContent = 'Valid Activation?'; // New header for the new column
+            const emptyHeaderCellElement = document.createElement('th');
+            headerRowElement.appendChild(dateHeaderCellElement);
+            headerRowElement.appendChild(validHeaderCellElement);
+            headerRowElement.appendChild(emptyHeaderCellElement);
+            theadElement.appendChild(headerRowElement);
+
+            activationDetails.forEach(activation => {
+                if (activation.hasOwnProperty('date')) {
+                    const rowElement = document.createElement('tr');
+                    rowElement.classList.add('active-row'); // Add active-row class to all rows
+                    const dateCellElement = document.createElement('td');
+                    dateCellElement.textContent = activation.date;
+                    const validCellElement = document.createElement('td');
+                    validCellElement.textContent = activation.is_valid ? 'Yes' : 'No'; // Example: Assuming valid property is boolean
+                    const emptyCellElement = document.createElement('td');
+                    rowElement.appendChild(dateCellElement);
+                    rowElement.appendChild(validCellElement);
+                    rowElement.appendChild(emptyCellElement);
+                    tbodyElement.appendChild(rowElement);
+                }
+            });
+
+            tableElement.appendChild(theadElement);
+            tableElement.appendChild(tbodyElement);
+            activationInfoElement.appendChild(tableElement);
+        })
+        .catch(error => {
+            console.error(error);
+            // Handle the error case
+        });
+}
+
+function showContactsDialog(contacts) {
+    // Assuming you have an existing HTML element with the ID "contactsDialog" to hold the dialog content
+    const dialogElement = document.getElementById('contactsDialog');
+    dialogElement.classList.remove('hidden');
+    // Clear the existing content
+    dialogElement.innerHTML = '';
+
+    // Create and append HTML elements to display the contacts
+    const titleElement = document.createElement('h2');
+    titleElement.textContent = 'Contacts';
+    dialogElement.appendChild(titleElement);
+
+    // Assuming contacts is an array of contact objects with properties like 'name', 'callsign', 'frequency', etc.
+    if (contacts.length > 0) {
+        const contactsList = document.createElement('ul');
+
+        contacts.forEach(contact => {
+            const contactItem = document.createElement('li');
+            contactItem.textContent = `Name: ${contact.name}, Callsign: ${contact.callsign}, Frequency: ${contact.frequency}`;
+            contactsList.appendChild(contactItem);
         });
 
-    const viewResolution = /** @type {number} */ (view.getResolution());
+        dialogElement.appendChild(contactsList);
+    } else {
+        const noContactsElement = document.createElement('p');
+        noContactsElement.textContent = 'No contacts found.';
+        dialogElement.appendChild(noContactsElement);
+    }
+
+    // Assuming you have a close button element with the ID "closeContactsDialog" to close the dialog
+    const closeButton = document.getElementById('closeContactsDialog');
+    closeButton.addEventListener('click', function() {
+        // Hide or remove the dialog
+        dialogElement.style.display = 'none';
+    });
+
+    // Display the dialog
+    dialogElement.style.display = 'block';
+}
+map.on('singleclick', function (evt) {
+    document.getElementById('info').innerHTML = '';
+    let features = undefined;
+    map.forEachFeatureAtPixel(
+        evt.pixel,
+        function (feature) {
+            if (!features) {
+                // Select the first feature encountered
+                features = feature;
+            }
+        },
+        {
+            hitTolerance: 15,
+            layerFilter: function (layer) {
+                // Optionally, you can specify the layers to consider for feature selection
+                return layer.get('selectable'); // Set a custom property like 'selectable' on the layers you want to include
+            },
+            multi: false // Ensure only one feature is selected
+        }
+    );
 
     if (features !== highlight) {
         if (highlight) {
-            highlight.setStyle(ActivationLocationStyle)
+            highlight.setStyle(ActivationLocationStyle);
+            showHideActivationDetailsDialog("hide");
         }
         if (features) {
             console.log("Hightlighting feature");
@@ -199,6 +359,10 @@ map.on('singleclick', function (evt) {
         const park_id = features.get("park_id");
         const notes = features.get("notes");
         const activation_count = features.get("activation_count");
+
+        // Get data to build activations and contacts tables
+        const activationLocationID = features.get("id");
+        const activationDetails = getActivationDetails(activationLocationID);
 
         document.getElementById('info').innerHTML =
             "<table class=\"styled-table\">\n" +
@@ -224,11 +388,25 @@ map.on('singleclick', function (evt) {
             "    </tbody>\n" +
             "</table>"
 
-        console.log(feature_type);
         //displayFeatureInfo(evt.pixel);
+        showActivationDetailsDialog(activationDetails);
     } else {
         console.log("Clicked on undefined feature");
     }
+
+    // click event listener to activations within the first dialog
+    const activationElements = document.querySelectorAll('.activation-element');
+    activationElements.forEach(element => {
+        element.addEventListener('click', function(event) {
+            const clickedActivationID = event.target.dataset.activationId;
+
+            // Step 8: Query the contacts table using clickedActivationID
+            const contacts = getContacts(clickedActivationID);
+
+            // Step 9: Display contacts in the second dialog or window
+            showContactsDialog(contacts);
+        });
+    });
 });
 
 const attribution = new Attribution({
