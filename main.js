@@ -259,10 +259,11 @@ function showActivationDetailsDialog(activationDetailsPromise) {
 
             activationDetails.forEach(activation => {
                 if (activation.hasOwnProperty('date')) {
+                    const cleanedDate = activation.date.slice(0, -1);
                     const rowElement = document.createElement('tr');
                     rowElement.classList.add('active-row'); // Add active-row class to all rows
                     const dateCellElement = document.createElement('td');
-                    dateCellElement.textContent = activation.date;
+                    dateCellElement.textContent = cleanedDate;
                     const validCellElement = document.createElement('td');
                     validCellElement.textContent = activation.is_valid ? 'Yes' : 'No'; // Example: Assuming valid property is boolean
                     const emptyCellElement = document.createElement('td');
