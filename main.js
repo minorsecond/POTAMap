@@ -109,7 +109,7 @@ const maxZoom = 20; // Maximum zoom level to show the heatmap layer
 
 const heatmapLayer = new HeatmapLayer({
     source: activationLocationSource,
-    blur: 150,
+    blur: 200,
     radius: 200,
     opacity: 0.5,
     gradient: ['#00f', '#0ff', '#0f0', '#ff0', '#f00'],
