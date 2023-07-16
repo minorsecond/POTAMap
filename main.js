@@ -37,7 +37,7 @@ const OSMLayer = new Tile({
 
 const activationLocationSource = new VectorSource({
     format: new GeoJSON(),
-    attributions: "R.R. Wardrup | www.rwardrup.com",
+    attributions: "Ross Wardrup | www.rwardrup.com",
     url: function (extent) {
         return (
             geoserver_wfs +
@@ -53,7 +53,7 @@ const activationLocationSource = new VectorSource({
 
 const stateParkSource = new VectorSource({
     format: new GeoJSON(),
-    attributions: "R.R. Wardrup | www.rwardrup.com",
+    attributions: "Ross Wardrup | www.rwardrup.com",
     url: function (extent) {
         return (
             geoserver_wfs +
