@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "ol": "^7.4.0",
+    "ol-ext": "^4.0.18",
     "ol-layerswitcher": "^4.1.1",
     "parcel": "^2.9.3"
   },
