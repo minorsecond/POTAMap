@@ -4,8 +4,9 @@ import View from 'ol/View';
 import {Tile as Tile, Vector as VectorLayer} from 'ol/layer';
 import {bbox as bboxStrategy} from 'ol/loadingstrategy'
 import VectorSource from 'ol/source/Vector';
+import { Cluster, Vector as VectorSource } from 'ol/source';
 import GeoJSON from 'ol/format/GeoJSON';
-import {Style, Circle, Fill, Stroke} from 'ol/style';
+import {Style, Circle, Fill, Stroke, Text} from 'ol/style';
 import {Attribution, defaults as defaultControls} from 'ol/control'
 import XYZ from "ol/source/XYZ";
 import HeatmapLayer from 'ol/layer/Heatmap';
@@ -35,20 +36,23 @@ const OSMLayer = new Tile({
     })
 })
 
-const activationLocationSource = new VectorSource({
-    format: new GeoJSON(),
-    attributions: "Ross Wardrup | www.rwardrup.com",
-    url: function (extent) {
-        return (
-            geoserver_wfs +
-            'version=1.0.0&request=GetFeature&typename=potamap:activation_location_w_counts&' +
-            'outputFormat=application/json&srsname=EPSG:3857&' +
-            'bbox=' +
-            extent.join(',') +
-            ',EPSG:3857'
-        );
-    },
-    strategy: bboxStrategy,
+const activationLocationSource = new Cluster({
+    distance: 40,
+    source: new VectorSource({
+        format: new GeoJSON(),
+        attributions: "Ross Wardrup | www.rwardrup.com",
+        url: function (extent) {
+            return (
+                geoserver_wfs +
+                'version=1.0.0&request=GetFeature&typename=potamap:activation_location_w_counts&' +
+                'outputFormat=application/json&srsname=EPSG:3857&' +
+                'bbox=' +
+                extent.join(',') +
+                ',EPSG:3857'
+            );
+        },
+        strategy: bboxStrategy,
+    }),
 });
 
 const stateParkSource = new VectorSource({
@@ -77,34 +81,60 @@ const stateParkSource_ = new TileWMS({
     ratio: 1
 })
 
-const ActivationLocationStyle = function(feature, resolution) {
-    const rating = feature.get('rating');
-    let color;
+const ActivationLocationStyle = function (feature) {
+    const size = feature.get('features').length;
+    let style;
 
-    if (rating === 1) {
-        color = 'rgba(255, 0, 0, 1.0)';  // Red for rating 1
-    } else if (rating === 2) {
-        color = 'rgba(255, 128, 0, 1.0)';  // Orange for rating 2
-    } else if (rating === 3) {
-        color = 'rgba(204, 204, 0, 1.0)';  // Yellow for rating 3
-    } else if (rating === 4) {
-        color = 'rgba(168, 232, 57, 1.0)';  // Lighter green for rating 4
+    if (size === 1) {
+        const rating = feature.get('features')[0].get('rating');
+        let color;
+
+        if (rating === 1) {
+            color = 'rgba(255, 0, 0, 1.0)';
+        } else if (rating === 2) {
+            color = 'rgba(255, 128, 0, 1.0)';
+        } else if (rating === 3) {
+            color = 'rgba(204, 204, 0, 1.0)';
+        } else if (rating === 4) {
+            color = 'rgba(168, 232, 57, 1.0)';
+        } else {
+            color = 'rgba(70, 189, 50, 1.0)';
+        }
+
+        style = new Style({
+            image: new Circle({
+                radius: 5,
+                fill: new Fill({
+                    color: color,
+                }),
+                stroke: new Stroke({
+                    color: 'rgba(0, 0, 0, 1.0)',
+                    width: 1,
+                }),
+            }),
+        });
     } else {
-        color = 'rgba(70, 189, 50, 1.0)';  // Darker green for rating 5
+        style = new Style({
+            image: new Circle({
+                radius: 10,
+                fill: new Fill({
+                    color: 'rgba(255, 255, 255, 0.8)',
+                }),
+                stroke: new Stroke({
+                    color: 'rgba(0, 0, 0, 1.0)',
+                    width: 2,
+                }),
+            }),
+            text: new Text({
+                text: size.toString(),
+                fill: new Fill({
+                    color: 'rgba(0, 0, 0, 1.0)',
+                }),
+            }),
+        });
     }
 
-    return new Style({
-        image: new Circle({
-            radius: 5,
-            fill: new Fill({
-                color: color
-            }),
-            stroke: new Stroke({
-                color: 'rgba(0, 0, 0, 1.0)',  // Dark border color
-                width: 1
-            })
-        })
-    });
+    return style;
 };
 
 var activationLocationMap = new VectorLayer({
@@ -112,7 +142,7 @@ var activationLocationMap = new VectorLayer({
     visible: true,
     source: activationLocationSource,
     style: ActivationLocationStyle,
-    selectable: true
+    selectable: true,
 });
 
 const stateParksMap_ = new Tile({
